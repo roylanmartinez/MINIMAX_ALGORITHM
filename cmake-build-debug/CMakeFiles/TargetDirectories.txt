@@ -1,0 +1,3 @@
+C:/Users/hp/Desktop/PROJECTS/Github/minimax_alg/cmake-build-debug/CMakeFiles/minimax_alg.dir
+C:/Users/hp/Desktop/PROJECTS/Github/minimax_alg/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/hp/Desktop/PROJECTS/Github/minimax_alg/cmake-build-debug/CMakeFiles/rebuild_cache.dir
