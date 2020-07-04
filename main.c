@@ -1,10 +1,17 @@
 
+/*
+ *
+Connect-4 Minimax Algorithm
 
-// CONNECT-4 MINIMAX ALGORITHM
-//
-// PART OF THE UAB SUMMER SCHOOL ADVANCED PROGRAMMING
-//
-// GUIDED BY Ph.D Vicenç Soler
+Part of the UAB SUMMER SCHOOL ADVANCED PROGRAMMING COURSE
+
+Guided by the Ph.D Vicenç Soler
+
+Made by the student Roylan Martinez Vargas
+
+NIU: 1539069
+
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +59,10 @@ int wonPosition(Node *passedNode, char symbol){
         }
         rowPoints = 0;
     }
+    // Check diagonally
+    for (int border = 1; border < N - 4 + 1; border++){
 
+    }
 }
 
 void initBoard(Node *board){
