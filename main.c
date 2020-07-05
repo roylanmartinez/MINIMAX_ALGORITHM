@@ -11,12 +11,14 @@ Made by the student Roylan Martinez Vargas
 
 NIU: 1539069
 
+July 5, 2020
+
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 5
+#define N 6
 
 // NODE BODY
 typedef struct node {
@@ -29,40 +31,75 @@ typedef struct node {
 
 int wonPosition(Node *passedNode, char symbol){
     // Check Horizontally
-    char rowPoints = 0, result = 0;
+    char rowPoints[2];
+    rowPoints[0] = 0;
+    rowPoints[1] = 0;
     for (int row = 0; row < N; row++){
         for (int column = 0; column < N; column++){
             if (passedNode->board[row][column] == symbol){
-                rowPoints++;
-                if (rowPoints == 4){
+                rowPoints[0]++;
+                if (rowPoints[0] == 4){
                     return 1;
                 }
             }
             else{
-                rowPoints = 0;
+                rowPoints[0] = 0;
             }
         }
-        rowPoints = 0;
+        rowPoints[0] = 0;
     }
     // Check vertically
     for (int column = 0; column < N; column++){
         for (int row = 0; row < N; row++){
             if (passedNode->board[row][column] == symbol){
-                rowPoints++;
-                if (rowPoints == 4){
+                rowPoints[0]++;
+                if (rowPoints[0] == 4){
                     return 1;
                 }
             }
             else{
-                rowPoints = 0;
+                rowPoints[0] = 0;
             }
         }
-        rowPoints = 0;
+        rowPoints[0] = 0;
     }
-    // Check diagonally
-    for (int border = 1; border < N - 4 + 1; border++){
+    // Check central diagonals
+//    for (int borderR = 1; borderR < N - 4 + 1; borderR++){
+//
+//    }
 
+    // Check diagonally not central diagonals
+    for (int borderR = 1; borderR < N - 4 + 1; borderR++){
+        // Check bottom left side to right upper side
+        for (int borderL = 0; borderL < N - borderR; borderL++){
+            if (passedNode->board[borderL][borderL + borderR] == symbol){
+                rowPoints[0]++;
+            }
+            if (passedNode->board[borderL + borderR][borderL] == symbol){
+                rowPoints[1]++;
+            }
+            if (rowPoints[0] == 4 || rowPoints[1] == 4){
+                return 1;
+            }
+        }
+
+        // Reset rowPoints to check inverse diagonals
+        rowPoints[0] = 0; rowPoints[1] = 0;
+
+        // Check upper left side to bottom right side
+        for (int borderL = 0; borderL < N - borderR; borderL++){
+            if (passedNode->board[borderL][N - borderL - borderR - 1] == symbol){
+                rowPoints[0]++;
+            }
+            if (passedNode->board[borderL + borderR][N - borderL - 1] == symbol){
+                rowPoints[1]++;
+            }
+            if (rowPoints[0] == 4 || rowPoints[1] == 4){
+                return 1;
+            }
+        }
     }
+    return 0;
 }
 
 void initBoard(Node *board){
@@ -74,10 +111,12 @@ void initBoard(Node *board){
 }
 
 void printBoard(Node *passedNode){
+    // Print numbers in the top
     printf("\n  ");
     for (int columnNames = 0; columnNames < N; columnNames++){
         printf("   %i  ", (columnNames));
     };
+    // print the board
     printf("  \n");
     for (int row = 0; row < N; row++){
         printf("%i ", row);
@@ -90,7 +129,8 @@ void printBoard(Node *passedNode){
             }
             else {
                 printf("|     ");
-            };
+            }
+
         };
         printf("|\n");
     }
@@ -164,10 +204,10 @@ int main(){
     Node test;
     initBoard(&test);
 
-    test.board[0][1] = 'o';
-    test.board[1][1] = 'o';
-    test.board[3][1] = 'o';
-    test.board[2][1] = 'o';
+    test.board[2][5] = 'o';
+    test.board[3][4] = 'o';
+    test.board[4][3] = 'o';
+    test.board[5][2] = 'o';
     printBoard(&test);
     printf("%i", wonPosition(&test, 'o'));
     return 0;
