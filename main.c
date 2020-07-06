@@ -32,8 +32,7 @@ typedef struct node {
 int wonPosition(Node *passedNode, char symbol){
     // Check Horizontally
     char rowPoints[2];
-    rowPoints[0] = 0;
-    rowPoints[1] = 0;
+    rowPoints[0] = 0; rowPoints[1] = 0;
     for (int row = 0; row < N; row++){
         for (int column = 0; column < N; column++){
             if (passedNode->board[row][column] == symbol){
@@ -64,26 +63,46 @@ int wonPosition(Node *passedNode, char symbol){
         rowPoints[0] = 0;
     }
     // Check central diagonals
-//    for (int borderR = 1; borderR < N - 4 + 1; borderR++){
-//
-//    }
+    for (int borderL = 0; borderL < N; borderL++){
+        if (passedNode->board[borderL][borderL] == symbol){
+            rowPoints[0]++;
+        }
+        else {
+            rowPoints[0] = 0;
+        }
+        if (passedNode->board[N - borderL - 1][borderL] == symbol){
+            rowPoints[1]++;
+        }
+        else {
+            rowPoints[1] = 0;
+        }
+        if (rowPoints[0] == 4 || rowPoints[1] == 4){
+            return 1;
+        }
+    }
 
     // Check diagonally not central diagonals
     for (int borderR = 1; borderR < N - 4 + 1; borderR++){
+
         // Check bottom left side to right upper side
         for (int borderL = 0; borderL < N - borderR; borderL++){
             if (passedNode->board[borderL][borderL + borderR] == symbol){
                 rowPoints[0]++;
             }
+            else {
+                rowPoints[0] = 0;
+            }
             if (passedNode->board[borderL + borderR][borderL] == symbol){
                 rowPoints[1]++;
+            }
+            else {
+                rowPoints[1] = 0;
             }
             if (rowPoints[0] == 4 || rowPoints[1] == 4){
                 return 1;
             }
         }
 
-        // Reset rowPoints to check inverse diagonals
         rowPoints[0] = 0; rowPoints[1] = 0;
 
         // Check upper left side to bottom right side
@@ -91,8 +110,14 @@ int wonPosition(Node *passedNode, char symbol){
             if (passedNode->board[borderL][N - borderL - borderR - 1] == symbol){
                 rowPoints[0]++;
             }
+            else {
+                rowPoints[0] = 0;
+            }
             if (passedNode->board[borderL + borderR][N - borderL - 1] == symbol){
                 rowPoints[1]++;
+            }
+            else {
+                rowPoints[1] = 0;
             }
             if (rowPoints[0] == 4 || rowPoints[1] == 4){
                 return 1;
@@ -204,10 +229,10 @@ int main(){
     Node test;
     initBoard(&test);
 
-    test.board[2][5] = 'o';
-    test.board[3][4] = 'o';
-    test.board[4][3] = 'o';
-    test.board[5][2] = 'o';
+    test.board[5][0] = 'o';
+    test.board[4][1] = 'o';
+    test.board[3][2] = 'o';
+    test.board[2][3] = 'o';
     printBoard(&test);
     printf("%i", wonPosition(&test, 'o'));
     return 0;
