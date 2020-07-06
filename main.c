@@ -29,6 +29,8 @@ typedef struct node {
     double value;   //heuristic value
 } Node;
 
+
+
 int wonPosition(Node *passedNode, char symbol){
     // Check Horizontally
     char rowPoints[2];
@@ -127,6 +129,41 @@ int wonPosition(Node *passedNode, char symbol){
     return 0;
 }
 
+void valueToNodes(Node *passedNode) {
+    int heuristicValue = 0;
+    // Value to leaf nodes
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            for (int subSubNode = 0; subSubNode < N; subSubNode++) {
+                if (wonPosition(passedNode->children[node]->children[subNode]->children[subSubNode], 'o')) {
+                    passedNode->children[node]->children[subNode]->children[subSubNode]->result = 1;
+                } else {
+                    passedNode->children[node]->children[subNode]->children[subSubNode]->result = 0;
+                }
+            }
+        }
+    }
+    // Heuristic value for the second children generation
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            int sumWin = 0;
+            for (int subSubNode = 0 ; subSubNode < N; subSubNode++) {
+                sumWin += passedNode->children[node]->children[subNode]->children[subSubNode]->result;
+            }
+            heuristicValue = sumWin / N;
+            passedNode->children[node]->children[subNode]->value = heuristicValue;
+        }
+    }
+    // Heuristic value for the first children generation
+    for (int node = 0; node < N; node++) {
+        double sumWin = passedNode->children[node]->children[0]->value;
+        for (int subNode = 0; subNode < N; subNode++) {
+            if (sumWin >= passedNode->children[node]->children[subNode]->value){
+                sumWin = passedNode->children[node]->children[subNode]->value;
+            }
+        }
+    }
+}
 void initBoard(Node *board){
     for (int row = 0; row < N; row++) {
         for (int column = 0; column < N; column++) {
@@ -178,8 +215,9 @@ void applyThrow(Node *passedNode, int numChild, int isCircle){
     }
     if (passedNode->board[0][numChild] == ' ') {
         passedNode->board[0][numChild] = symbol;
-    } else {
-        passedNode->result = -1;
+    }
+    else {
+        return;
     }
 };
 
@@ -194,31 +232,29 @@ int numOfChildren(Node *p){
 }
 
 Node *createNode(Node *parent, int numChild, int level) {
-    Node *p=malloc(sizeof(Node));
-    copyBoard(p,parent);
-    applyThrow(p,numChild, 1);
-    if (level<2) {
-        p->n_children=numOfChildren(p);
-    }
-    else {
-        p->n_children=0;
+    Node *p = malloc(sizeof(Node));
+    copyBoard(p, parent);
+    applyThrow(p, numChild, 1);
+    if (level < 2) {
+        p->n_children = numOfChildren(p);
+    } else {
+        p->n_children = 0;
     }
     return p;
 }
 
+
 void createChildren(Node *parent,int level) {
-    int i;
-    for (i=0;i<parent->n_children;i++) {
+    for (int i=0;i<parent->n_children;i++) {
         parent->children[i]=createNode(parent,i,level);
     }
 }
 
 //We consider root node already created and n_children already set.
 void createTree(Node *root) {
-    int i;
     root->n_children=numOfChildren(root);
     createChildren(root,1);   //1st generation
-    for(i=0;i<root->n_children;i++) {       //creates the 2nd generation
+    for(int i=0;i<root->n_children;i++) {       //creates the 2nd generation
         root->children[i]->n_children = numOfChildren(root->children[i]);
         createChildren(root->children[i],2);
     }
