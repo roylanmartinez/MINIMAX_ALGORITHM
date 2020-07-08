@@ -18,18 +18,23 @@ July 5, 2020
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 6
+#define N 4
 
 // NODE BODY
 typedef struct node {
     char board[N][N];   //-128,127
     char result;
     struct node *children[N];
-    int n_children;
-    double value;   //heuristic value
+    float value;   //heuristic value
 } Node;
 
-
+void initBoard(Node *passedNode){
+    for (int row = 0; row < N; row++) {
+        for (int column = 0; column < N; column++) {
+            passedNode->board[row][column] = ' ';
+        }
+    }
+}
 
 int wonPosition(Node *passedNode, char symbol){
     // Check Horizontally
@@ -129,8 +134,8 @@ int wonPosition(Node *passedNode, char symbol){
     return 0;
 }
 
-void valueToNodes(Node *passedNode) {
-    int heuristicValue = 0;
+
+int bestMove(Node *passedNode) {
     // Value to leaf nodes
     for (int node = 0; node < N; node++) {
         for (int subNode = 0; subNode < N; subNode++) {
@@ -144,32 +149,36 @@ void valueToNodes(Node *passedNode) {
         }
     }
     // Heuristic value for the second children generation
+    float heuristicValue = 0;
     for (int node = 0; node < N; node++) {
         for (int subNode = 0; subNode < N; subNode++) {
             int sumWin = 0;
             for (int subSubNode = 0 ; subSubNode < N; subSubNode++) {
                 sumWin += passedNode->children[node]->children[subNode]->children[subSubNode]->result;
             }
-            heuristicValue = sumWin / N;
+            heuristicValue = (float)sumWin / (float)N;
             passedNode->children[node]->children[subNode]->value = heuristicValue;
         }
     }
     // Heuristic value for the first children generation
     for (int node = 0; node < N; node++) {
-        double sumWin = passedNode->children[node]->children[0]->value;
+        float sumWin = passedNode->children[node]->children[0]->value;
         for (int subNode = 0; subNode < N; subNode++) {
             if (sumWin >= passedNode->children[node]->children[subNode]->value){
                 sumWin = passedNode->children[node]->children[subNode]->value;
             }
         }
+        passedNode->children[node]->value = sumWin;
     }
-}
-void initBoard(Node *board){
-    for (int row = 0; row < N; row++) {
-        for (int column = 0; column < N; column++) {
-            board->board[row][column] = ' ';
+    float numberFirstRow = passedNode->children[0]->value;
+    int bestMoveResult = 0;
+    for (int node = 0; node < N; node++) {
+        if (numberFirstRow <= passedNode->children[node]->value){
+            numberFirstRow = passedNode->children[node]->value;
+            bestMoveResult = node;
         }
     }
+    return bestMoveResult;
 }
 
 void printBoard(Node *passedNode){
@@ -206,15 +215,15 @@ void copyBoard(Node *nodeToBoard, Node *nodeFromBoard) {
     }
 };
 
-void applyThrow(Node *passedNode, int numChild, int isCircle){
-    char symbol;
-    if (isCircle) {
-        symbol = 'o';
-    } else {
-        symbol = 'x';
-    }
+void applyThrow(Node *passedNode, int numChild, char symbol){
     if (passedNode->board[0][numChild] == ' ') {
-        passedNode->board[0][numChild] = symbol;
+        for (int row = 0; row < N; row++){
+            if (passedNode->board[N - row - 1][numChild] == ' '){
+                passedNode->board[N - row - 1][numChild] = symbol;
+                return;
+            }
+        }
+
     }
     else {
         return;
@@ -231,45 +240,89 @@ int numOfChildren(Node *p){
     return freeColumns;
 }
 
-Node *createNode(Node *parent, int numChild, int level) {
-    Node *p = malloc(sizeof(Node));
-    copyBoard(p, parent);
-    applyThrow(p, numChild, 1);
-    if (level < 2) {
-        p->n_children = numOfChildren(p);
-    } else {
-        p->n_children = 0;
-    }
-    return p;
-}
-
-
-void createChildren(Node *parent,int level) {
-    for (int i=0;i<parent->n_children;i++) {
-        parent->children[i]=createNode(parent,i,level);
-    }
+Node *createNode(Node *parent) {
+    Node *newNode = malloc(sizeof(Node));
+    copyBoard(newNode, parent);
+    return newNode;
 }
 
 //We consider root node already created and n_children already set.
-void createTree(Node *root) {
-    root->n_children=numOfChildren(root);
-    createChildren(root,1);   //1st generation
-    for(int i=0;i<root->n_children;i++) {       //creates the 2nd generation
-        root->children[i]->n_children = numOfChildren(root->children[i]);
-        createChildren(root->children[i],2);
+void createTree(Node *passedNode) {
+    for (int node = 0; node < N; node++) {
+        passedNode->children[node] = createNode(passedNode);
+        applyThrow(passedNode->children[node], node, 'o');
     }
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            passedNode->children[node]->children[subNode] = createNode(passedNode->children[node]);
+            applyThrow(passedNode->children[node]->children[subNode], subNode, 'x');
+        }
+    }
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++){
+            for (int subSubNode = 0; subSubNode < N; subSubNode++){
+                passedNode->children[node]->children[subNode]->children[subSubNode]
+                = createNode(passedNode->children[node]->children[subNode]);
+                applyThrow(passedNode->children[node]->children[subNode]->children[subSubNode], subSubNode, 'x');
+            }
+        }
+    }
+}
+
+void deleteTree(Node *passedNode) {
+    for (int node = 0; node < N; node++) {
+        free(passedNode->children[node]);
+    }
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            free(passedNode->children[node]->children[subNode]);
+        }
+    }
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++){
+            for (int subSubNode = 0; subSubNode < N; subSubNode++){
+                free(passedNode->children[node]->children[subNode]->children[subSubNode]);
+            }
+        }
+    }
+}
+
+int isDraw(Node *passedNode){
+    for (int column = 0; column < N; column++){
+        if (passedNode->board[0][column] == ' '){
+            return 0;
+        }
+    }
+    return 1;
 }
 
 int main(){
     int choice;
     Node test;
     initBoard(&test);
+    while (1){
+        createTree(&test);
+        printf("Please Select the row\n");
+        scanf("%i", &choice);
+        applyThrow((&test), choice, 'x');
+        if (wonPosition(&test, 'x')){
+            break;
+        }
+        if (isDraw(&test)){
+            break;
+        }
+        printBoard((&test));
+        printf("Now it is my turn\n");
+        applyThrow((&test), bestMove((&test)), 'o');
+        printBoard((&test));
+        if (wonPosition(&test, 'o')){
+            break;
+        }
+        if (isDraw(&test)){
+            break;
+        }
+        deleteTree(&test);
+    }
 
-    test.board[5][0] = 'o';
-    test.board[4][1] = 'o';
-    test.board[3][2] = 'o';
-    test.board[2][3] = 'o';
-    printBoard(&test);
-    printf("%i", wonPosition(&test, 'o'));
-    return 0;
+//    return 0;
 }
