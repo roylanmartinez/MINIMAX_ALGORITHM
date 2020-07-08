@@ -23,7 +23,6 @@ July 5, 2020
 // NODE BODY
 typedef struct node {
     char board[N][N];   //-128,127
-    char result;
     struct node *children[N];
     float value;   //heuristic value
 } Node;
@@ -134,53 +133,6 @@ int wonPosition(Node *passedNode, char symbol){
     return 0;
 }
 
-
-int bestMove(Node *passedNode) {
-    // Value to leaf nodes
-    for (int node = 0; node < N; node++) {
-        for (int subNode = 0; subNode < N; subNode++) {
-            for (int subSubNode = 0; subSubNode < N; subSubNode++) {
-                if (wonPosition(passedNode->children[node]->children[subNode]->children[subSubNode], 'o')) {
-                    passedNode->children[node]->children[subNode]->children[subSubNode]->result = 1;
-                } else {
-                    passedNode->children[node]->children[subNode]->children[subSubNode]->result = 0;
-                }
-            }
-        }
-    }
-    // Heuristic value for the second children generation
-    float heuristicValue = 0;
-    for (int node = 0; node < N; node++) {
-        for (int subNode = 0; subNode < N; subNode++) {
-            int sumWin = 0;
-            for (int subSubNode = 0 ; subSubNode < N; subSubNode++) {
-                sumWin += passedNode->children[node]->children[subNode]->children[subSubNode]->result;
-            }
-            heuristicValue = (float)sumWin / (float)N;
-            passedNode->children[node]->children[subNode]->value = heuristicValue;
-        }
-    }
-    // Heuristic value for the first children generation
-    for (int node = 0; node < N; node++) {
-        float lowestValue = passedNode->children[node]->children[0]->value;
-        for (int subNode = 0; subNode < N; subNode++) {
-            if (lowestValue >= passedNode->children[node]->children[subNode]->value){
-                lowestValue = passedNode->children[node]->children[subNode]->value;
-            }
-        }
-        passedNode->children[node]->value = lowestValue;
-    }
-    float highestValue = passedNode->children[0]->value;
-    int bestMoveResult = 0;
-    for (int node = 0; node < N; node++) {
-        if (highestValue <= passedNode->children[node]->value){
-            highestValue = passedNode->children[node]->value;
-            bestMoveResult = node;
-        }
-    }
-    return bestMoveResult;
-}
-
 void printBoard(Node *passedNode){
     // Print numbers in the top
     for (int columnNames = 0; columnNames < N; columnNames++){
@@ -251,16 +203,6 @@ void applyThrow(Node *passedNode, int numChild, char symbol){
     }
 };
 
-int numOfChildren(Node *p){
-    char freeColumns = 0;
-    for (int column = 0; column < N; column++){
-        if (p->board[0][column] == ' '){
-            freeColumns++;
-        }
-    }
-    return freeColumns;
-}
-
 Node *createNode(Node *parent) {
     Node *newNode = malloc(sizeof(Node));
     copyBoard(newNode, parent);
@@ -317,32 +259,110 @@ int isDraw(Node *passedNode){
     return 1;
 }
 
-int main(){
+int heuristicBestMove(Node *passedNode) {
+    // Does the human win in next move? If so avoid that
+
+    Node *copyOfNode = malloc(sizeof(Node));
+    copyBoard(copyOfNode, passedNode);
+
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++){
+            copyOfNode->children[subNode] = createNode(passedNode);
+            applyThrow(copyOfNode->children[subNode], subNode, 'x');
+            if (wonPosition((copyOfNode)->children[subNode], 'x')) {
+                printf("\n--------------------------------------\n");
+                printBoard(passedNode->children[subNode]);
+                printf("\n--------------------------------------\n");
+                free(copyOfNode->children[subNode]);
+                free(copyOfNode);
+                return subNode;
+            }
+            free(copyOfNode->children[subNode]);
+        }
+    }
+    free(copyOfNode);
+
+    // Value to leaf nodes
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            for (int subSubNode = 0; subSubNode < N; subSubNode++) {
+                if (wonPosition(passedNode->children[node]->children[subNode]->children[subSubNode], 'o')) {
+                    passedNode->children[node]->children[subNode]->children[subSubNode]->value = 1;
+                }
+            }
+        }
+    }
+    // Heuristic value for the second children generation
+    float heuristicValue = 0;
+    for (int node = 0; node < N; node++) {
+        for (int subNode = 0; subNode < N; subNode++) {
+            float sumWin = 0;
+            for (int subSubNode = 0 ; subSubNode < N; subSubNode++) {
+                sumWin += passedNode->children[node]->children[subNode]->children[subSubNode]->value;
+            }
+            heuristicValue = sumWin / (float)N;
+            passedNode->children[node]->children[subNode]->value = heuristicValue;
+        }
+    }
+    // Heuristic value for the first children generation
+    for (int node = 0; node < N; node++) {
+        float lowestValue = passedNode->children[node]->children[0]->value;
+        for (int subNode = 0; subNode < N; subNode++) {
+            if (lowestValue >= passedNode->children[node]->children[subNode]->value){
+                lowestValue = passedNode->children[node]->children[subNode]->value;
+            }
+        }
+        passedNode->children[node]->value = lowestValue;
+    }
+    // Value to main root
+    float highestValue = passedNode->children[0]->value;
+    int bestMoveResult = 0;
+    for (int node = 0; node < N; node++) {
+        if (highestValue <= passedNode->children[node]->value){
+            highestValue = passedNode->children[node]->value;
+            bestMoveResult = node;
+        }
+    }
+    return bestMoveResult;
+}
+
+int numOfChildren(Node *p){
+    char freeColumns = 0;
+    for (int column = 0; column < N; column++){
+        if (p->board[0][column] == ' '){
+            freeColumns++;
+        }
+    }
+    return freeColumns;
+}
+
+int main() {
     int choice;
     Node test;
     initBoard(&test);
-    while (1){
-        printf("Please Select the row\n");
+    while (1) {
+        printf("\n\nYour turn, Please Select the column\n");
         scanf("%i", &choice);
         applyThrow((&test), choice, 'x');
         printBoard((&test));
         createTree(&test);
-        if (wonPosition(&test, 'x')){
+        if (wonPosition(&test, 'x')) {
             break;
         }
-        if (isDraw(&test)){
+        if (isDraw(&test)) {
             break;
         }
-        printf("\n\nNow it is my turn\n");
-        applyThrow((&test), bestMove((&test)), 'o');
+        printf("\n\nComputer's turn\n");
+        applyThrow((&test), heuristicBestMove((&test)), 'o');
         printBoard((&test));
-        if (wonPosition(&test, 'o')){
+        if (wonPosition(&test, 'o')) {
             break;
         }
-        if (isDraw(&test)){
+        if (isDraw(&test)) {
             break;
         }
         deleteTree(&test);
+
     }
     return 0;
 }
