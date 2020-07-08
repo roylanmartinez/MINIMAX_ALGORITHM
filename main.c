@@ -266,22 +266,6 @@ int isDraw(Node *passedNode){
 }
 
 int heuristicBestMove(Node *passedNode) {
-    // Does the human win in next move? If so avoid that
-
-    Node *copyOfNode = malloc(sizeof(Node));
-    copyBoard(copyOfNode, passedNode);
-
-    for (int node = 0; node < N; node++){
-        copyOfNode->children[node] = createNode(passedNode);
-        applyThrow(copyOfNode->children[node], node, 'x');
-        if (wonPosition((copyOfNode)->children[node], 'x')) {
-            free(copyOfNode->children[node]);
-            free(copyOfNode);
-            return node;
-        }
-        free(copyOfNode->children[node]);
-    }
-    free(copyOfNode);
 
     // Value to leaf nodes
     for (int node = 0; node < N; node++) {
@@ -289,6 +273,9 @@ int heuristicBestMove(Node *passedNode) {
             for (int subSubNode = 0; subSubNode < N; subSubNode++) {
                 if (wonPosition(passedNode->children[node]->children[subNode]->children[subSubNode], 'o')) {
                     passedNode->children[node]->children[subNode]->children[subSubNode]->value = 1;
+                }
+                else {
+                    passedNode->children[node]->children[subNode]->children[subSubNode]->value = 0;
                 }
             }
         }
@@ -318,51 +305,43 @@ int heuristicBestMove(Node *passedNode) {
     // Value to main root
     float highestValue = passedNode->children[0]->value;
     int bestMoveResult = 0;
+
     for (int node = 0; node < N; node++) {
         if (highestValue <= passedNode->children[node]->value){
             highestValue = passedNode->children[node]->value;
             bestMoveResult = node;
         }
     }
-    return bestMoveResult;
+
+    // Does the human win in next move? If so avoid that
+
+    Node *copyOfNode = malloc(sizeof(Node));
+    copyBoard(copyOfNode, passedNode);
+    applyThrow(copyOfNode, bestMoveResult, 'o');
+
+    if (wonPosition(copyOfNode, 'o') == 1){
+        return bestMoveResult;
+    }
+    else{
+        for (int node = 0; node < N; node++){
+            copyOfNode->children[node] = createNode(passedNode);
+            applyThrow(copyOfNode->children[node], node, 'x');
+            if (wonPosition((copyOfNode)->children[node], 'x')) {
+                free(copyOfNode->children[node]);
+                free(copyOfNode);
+                return node;
+            }
+        }
+    }
+    return 0;
 }
 
 int main() {
-    int choice;
+    int choice, bestMove;
     Node test;
     initBoard(&test);
     printf("\n");
     printBoard(&test);
-//    test.board[3][0] = 'x';
-//    test.board[3][1] = 'x';
-//    test.board[3][2] = 'o';
-////    test.board[0][3] = 'o';
-//    test.board[3][4] = 'o';
-//    test.board[4][0] = 'o';
-//    test.board[4][1] = 'o';
-//    test.board[4][2] = 'x';
-//    test.board[4][3] = 'o';
-//    test.board[4][4] = 'o';
-//    test.board[5][0] = 'o';
-//    test.board[5][1] = 'x';
-//    test.board[5][2] = 'o';
-//    test.board[5][3] = 'x';
-//    test.board[5][4] = 'x';
-//    test.board[6][0] = 'x';
-//    test.board[6][1] = 'x';
-//    test.board[6][2] = 'o';
-//    test.board[6][3] = 'x';
-//    test.board[6][4] = 'o';
-//    test.board[6][0] = 'x';
-//    test.board[7][0] = 'o';
-//    test.board[7][1] = 'x';
-//    test.board[7][2] = 'x';
-//    test.board[7][3] = 'o';
-//    test.board[7][4] = 'o';
-//    printBoard(&test);
-//    printf("%i\n", wonPosition(&test, 'o'));
-//    printf("%i\n", heuristicBestMove(&test));
-//    return 0;
     while (1) {
         printf("\nYour turn, please select a column between 0 and %i:\n", N-1);
         scanf("%i", &choice);
@@ -385,8 +364,9 @@ int main() {
             printf("\nWELL, IT LOOKS LIKE A DRAW\n\n");
             break;
         }
-        printf("\n----------------\n");
-        applyThrow((&test), heuristicBestMove((&test)), 'o');
+        bestMove = heuristicBestMove((&test));
+        applyThrow((&test), bestMove, 'o');
+        printf("\n\nComputer's turn move in the column %i\n", bestMove);
         printBoard((&test));
         if (wonPosition(&test, 'o')) {
             printf("\nIT SEEMS I WON, DOESN'T IT? ;)\n\n");
