@@ -18,7 +18,7 @@ July 5, 2020
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 4
+#define N 8
 
 // NODE BODY
 typedef struct node {
@@ -86,6 +86,8 @@ int wonPosition(Node *passedNode, char symbol){
             return 1;
         }
     }
+
+    rowPoints[0] = 0; rowPoints[1] = 0;
 
     // Check diagonally not central diagonals
     for (int borderR = 1; borderR < N - 4 + 1; borderR++){
@@ -166,13 +168,13 @@ void copyBoard(Node *nodeToBoard, Node *nodeFromBoard) {
     }
 };
 
-void applyThrow(Node *passedNode, int numChild, char symbol){
+int applyThrow(Node *passedNode, int numChild, char symbol){
     if (symbol == 'o'){
         if (passedNode->board[0][numChild] == ' ') {
             for (int row = 0; row < N; row++){
                 if (passedNode->board[N - row - 1][numChild] == ' '){
                     passedNode->board[N - row - 1][numChild] = symbol;
-                    return;
+                    return 1;
                 }
             }
 
@@ -183,7 +185,7 @@ void applyThrow(Node *passedNode, int numChild, char symbol){
                     for (int row = 0; row < N; row++){
                         if (passedNode->board[N - row - 1][column] == ' '){
                             passedNode->board[N - row - 1][column] = symbol;
-                            return;
+                            return 1;
                         }
                     }
 
@@ -196,11 +198,15 @@ void applyThrow(Node *passedNode, int numChild, char symbol){
             for (int row = 0; row < N; row++){
                 if (passedNode->board[N - row - 1][numChild] == ' '){
                     passedNode->board[N - row - 1][numChild] = symbol;
-                    return;
+                    return 1;
                 }
             }
         }
+        else {
+            return 0;
+        }
     }
+    return 0;
 };
 
 Node *createNode(Node *parent) {
@@ -210,7 +216,7 @@ Node *createNode(Node *parent) {
 }
 
 //We consider root node already created and n_children already set.
-void createTree(Node *passedNode) {
+void setUpTree(Node *passedNode) {
     for (int node = 0; node < N; node++) {
         passedNode->children[node] = createNode(passedNode);
         applyThrow(passedNode->children[node], node, 'o');
@@ -265,20 +271,15 @@ int heuristicBestMove(Node *passedNode) {
     Node *copyOfNode = malloc(sizeof(Node));
     copyBoard(copyOfNode, passedNode);
 
-    for (int node = 0; node < N; node++) {
-        for (int subNode = 0; subNode < N; subNode++){
-            copyOfNode->children[subNode] = createNode(passedNode);
-            applyThrow(copyOfNode->children[subNode], subNode, 'x');
-            if (wonPosition((copyOfNode)->children[subNode], 'x')) {
-                printf("\n--------------------------------------\n");
-                printBoard(passedNode->children[subNode]);
-                printf("\n--------------------------------------\n");
-                free(copyOfNode->children[subNode]);
-                free(copyOfNode);
-                return subNode;
-            }
-            free(copyOfNode->children[subNode]);
+    for (int node = 0; node < N; node++){
+        copyOfNode->children[node] = createNode(passedNode);
+        applyThrow(copyOfNode->children[node], node, 'x');
+        if (wonPosition((copyOfNode)->children[node], 'x')) {
+            free(copyOfNode->children[node]);
+            free(copyOfNode);
+            return node;
         }
+        free(copyOfNode->children[node]);
     }
     free(copyOfNode);
 
@@ -326,43 +327,76 @@ int heuristicBestMove(Node *passedNode) {
     return bestMoveResult;
 }
 
-int numOfChildren(Node *p){
-    char freeColumns = 0;
-    for (int column = 0; column < N; column++){
-        if (p->board[0][column] == ' '){
-            freeColumns++;
-        }
-    }
-    return freeColumns;
-}
-
 int main() {
     int choice;
     Node test;
     initBoard(&test);
+    printf("\n");
+    printBoard(&test);
+//    test.board[3][0] = 'x';
+//    test.board[3][1] = 'x';
+//    test.board[3][2] = 'o';
+////    test.board[0][3] = 'o';
+//    test.board[3][4] = 'o';
+//    test.board[4][0] = 'o';
+//    test.board[4][1] = 'o';
+//    test.board[4][2] = 'x';
+//    test.board[4][3] = 'o';
+//    test.board[4][4] = 'o';
+//    test.board[5][0] = 'o';
+//    test.board[5][1] = 'x';
+//    test.board[5][2] = 'o';
+//    test.board[5][3] = 'x';
+//    test.board[5][4] = 'x';
+//    test.board[6][0] = 'x';
+//    test.board[6][1] = 'x';
+//    test.board[6][2] = 'o';
+//    test.board[6][3] = 'x';
+//    test.board[6][4] = 'o';
+//    test.board[6][0] = 'x';
+//    test.board[7][0] = 'o';
+//    test.board[7][1] = 'x';
+//    test.board[7][2] = 'x';
+//    test.board[7][3] = 'o';
+//    test.board[7][4] = 'o';
+//    printBoard(&test);
+//    printf("%i\n", wonPosition(&test, 'o'));
+//    printf("%i\n", heuristicBestMove(&test));
+//    return 0;
     while (1) {
-        printf("\n\nYour turn, Please Select the column\n");
+        printf("\nYour turn, please select a column between 0 and %i:\n", N-1);
         scanf("%i", &choice);
-        applyThrow((&test), choice, 'x');
+        while (1){
+            if (applyThrow((&test), choice, 'x') == 0){
+                printf("\nThe column %i is full, please select a different one\n", choice);
+                scanf("%i", &choice);
+            }
+            else {
+                break;
+            }
+        }
         printBoard((&test));
-        createTree(&test);
+        setUpTree(&test);
         if (wonPosition(&test, 'x')) {
+            printf("\nYOU WERE LUCKY, NEXT TIME WON'T BE THAT EASY\n\n");
             break;
         }
         if (isDraw(&test)) {
+            printf("\nWELL, IT LOOKS LIKE A DRAW\n\n");
             break;
         }
-        printf("\n\nComputer's turn\n");
+        printf("\n----------------\n");
         applyThrow((&test), heuristicBestMove((&test)), 'o');
         printBoard((&test));
         if (wonPosition(&test, 'o')) {
+            printf("\nIT SEEMS I WON, DOESN'T IT? ;)\n\n");
             break;
         }
         if (isDraw(&test)) {
+            printf("\nWELL, IT LOOKS LIKE A DRAW\n\n");
             break;
         }
-        deleteTree(&test);
-
     }
+    deleteTree(&test);
     return 0;
 }
