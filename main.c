@@ -162,19 +162,19 @@ int bestMove(Node *passedNode) {
     }
     // Heuristic value for the first children generation
     for (int node = 0; node < N; node++) {
-        float sumWin = passedNode->children[node]->children[0]->value;
+        float lowestValue = passedNode->children[node]->children[0]->value;
         for (int subNode = 0; subNode < N; subNode++) {
-            if (sumWin >= passedNode->children[node]->children[subNode]->value){
-                sumWin = passedNode->children[node]->children[subNode]->value;
+            if (lowestValue >= passedNode->children[node]->children[subNode]->value){
+                lowestValue = passedNode->children[node]->children[subNode]->value;
             }
         }
-        passedNode->children[node]->value = sumWin;
+        passedNode->children[node]->value = lowestValue;
     }
-    float numberFirstRow = passedNode->children[0]->value;
+    float highestValue = passedNode->children[0]->value;
     int bestMoveResult = 0;
     for (int node = 0; node < N; node++) {
-        if (numberFirstRow <= passedNode->children[node]->value){
-            numberFirstRow = passedNode->children[node]->value;
+        if (highestValue <= passedNode->children[node]->value){
+            highestValue = passedNode->children[node]->value;
             bestMoveResult = node;
         }
     }
@@ -183,7 +183,6 @@ int bestMove(Node *passedNode) {
 
 void printBoard(Node *passedNode){
     // Print numbers in the top
-    printf("\n  ");
     for (int columnNames = 0; columnNames < N; columnNames++){
         printf("   %i  ", (columnNames));
     };
@@ -216,17 +215,39 @@ void copyBoard(Node *nodeToBoard, Node *nodeFromBoard) {
 };
 
 void applyThrow(Node *passedNode, int numChild, char symbol){
-    if (passedNode->board[0][numChild] == ' ') {
-        for (int row = 0; row < N; row++){
-            if (passedNode->board[N - row - 1][numChild] == ' '){
-                passedNode->board[N - row - 1][numChild] = symbol;
-                return;
+    if (symbol == 'o'){
+        if (passedNode->board[0][numChild] == ' ') {
+            for (int row = 0; row < N; row++){
+                if (passedNode->board[N - row - 1][numChild] == ' '){
+                    passedNode->board[N - row - 1][numChild] = symbol;
+                    return;
+                }
+            }
+
+        }
+        else {
+            for (int column = 0; column < N; column++){
+                if (passedNode->board[0][column] == ' ') {
+                    for (int row = 0; row < N; row++){
+                        if (passedNode->board[N - row - 1][column] == ' '){
+                            passedNode->board[N - row - 1][column] = symbol;
+                            return;
+                        }
+                    }
+
+                }
             }
         }
-
     }
     else {
-        return;
+        if (passedNode->board[0][numChild] == ' ') {
+            for (int row = 0; row < N; row++){
+                if (passedNode->board[N - row - 1][numChild] == ' '){
+                    passedNode->board[N - row - 1][numChild] = symbol;
+                    return;
+                }
+            }
+        }
     }
 };
 
@@ -263,7 +284,7 @@ void createTree(Node *passedNode) {
             for (int subSubNode = 0; subSubNode < N; subSubNode++){
                 passedNode->children[node]->children[subNode]->children[subSubNode]
                 = createNode(passedNode->children[node]->children[subNode]);
-                applyThrow(passedNode->children[node]->children[subNode]->children[subSubNode], subSubNode, 'x');
+                applyThrow(passedNode->children[node]->children[subNode]->children[subSubNode], subSubNode, 'o');
             }
         }
     }
@@ -301,18 +322,18 @@ int main(){
     Node test;
     initBoard(&test);
     while (1){
-        createTree(&test);
         printf("Please Select the row\n");
         scanf("%i", &choice);
         applyThrow((&test), choice, 'x');
+        printBoard((&test));
+        createTree(&test);
         if (wonPosition(&test, 'x')){
             break;
         }
         if (isDraw(&test)){
             break;
         }
-        printBoard((&test));
-        printf("Now it is my turn\n");
+        printf("\n\nNow it is my turn\n");
         applyThrow((&test), bestMove((&test)), 'o');
         printBoard((&test));
         if (wonPosition(&test, 'o')){
@@ -323,6 +344,5 @@ int main(){
         }
         deleteTree(&test);
     }
-
-//    return 0;
+    return 0;
 }
