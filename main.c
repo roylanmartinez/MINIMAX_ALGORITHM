@@ -2,23 +2,17 @@
 /*
  *
 Connect-4 Minimax Algorithm
-
 Part of the UAB SUMMER SCHOOL ADVANCED PROGRAMMING COURSE
-
 Guided by the Ph.D Vicenç Soler
-
 Made by the student Roylan Martinez Vargas
-
 NIU: 1539069
-
 July 5, 2020
-
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 8
+#define N 5
 
 // NODE BODY
 typedef struct node {
@@ -231,7 +225,7 @@ void setUpTree(Node *passedNode) {
         for (int subNode = 0; subNode < N; subNode++){
             for (int subSubNode = 0; subSubNode < N; subSubNode++){
                 passedNode->children[node]->children[subNode]->children[subSubNode]
-                = createNode(passedNode->children[node]->children[subNode]);
+                        = createNode(passedNode->children[node]->children[subNode]);
                 applyThrow(passedNode->children[node]->children[subNode]->children[subSubNode], subSubNode, 'o');
             }
         }
@@ -303,13 +297,22 @@ int heuristicBestMove(Node *passedNode) {
         passedNode->children[node]->value = lowestValue;
     }
     // Value to main root
+    int goodGames[N], index = 0;
+    for (int i = 0; i < N; i++){
+        goodGames[i] = 0;
+    }
     float highestValue = passedNode->children[0]->value;
-    int bestMoveResult = 0;
-
+    int bestMoveResult = 0, bestMoveResultConstant = 0;
+    int goodGamesLen = 0;
     for (int node = 0; node < N; node++) {
-        if (highestValue <= passedNode->children[node]->value){
+        if (highestValue < passedNode->children[node]->value){
             highestValue = passedNode->children[node]->value;
             bestMoveResult = node;
+        }
+        else if (highestValue == passedNode->children[node]->value){
+            goodGames[index] = node;
+            index++;
+            goodGamesLen++;
         }
     }
 
@@ -331,9 +334,16 @@ int heuristicBestMove(Node *passedNode) {
                 free(copyOfNode);
                 return node;
             }
+            free(copyOfNode->children[node]);
         }
+        free(copyOfNode);
+
     }
-    return 0;
+    if (goodGamesLen >= 2){
+        int randomNumber = (rand() % goodGamesLen);
+        return goodGames[randomNumber];
+    }
+    return bestMoveResultConstant;
 }
 
 int main() {
